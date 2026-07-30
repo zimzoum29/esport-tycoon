@@ -4,7 +4,7 @@ local ROWS = 8
 local ORIGIN_X = 112
 local ORIGIN_Y = 38
 local AVATAR_SPEED = 200
-
+ 
 local images = {}
 local avatar = { x = 0, y = 0, targetX = 0, targetY = 0 }
 
@@ -12,9 +12,7 @@ local function tilePos(col, row)
   return ORIGIN_X + col * TILE + TILE / 2, ORIGIN_Y + row * TILE + TILE / 2
 end
 
--- love.graphics.draw dessine par défaut depuis le coin haut-gauche ; on
--- recentre en passant l'origine (ox, oy) au centre de l'image, pour que x,y
--- soit le centre — même convention que Sprite2D côté Phaser/Godot.
+
 local function drawCentered(img, x, y)
   love.graphics.draw(img, x, y, 0, 1, 1, img:getWidth() / 2, img:getHeight() / 2)
 end
@@ -50,10 +48,15 @@ function love.mousepressed(x, y, button)
   end
 end
 
+function love.keypressed(key)
+  if key == "escape" then
+    love.event.quit()
+  end
+end
+
 function love.draw()
   love.graphics.clear(0.06, 0.08, 0.11)
 
-  -- Sol + murs, grille simple
   for row = 0, ROWS - 1 do
     for col = 0, COLS - 1 do
       local x, y = tilePos(col, row)
@@ -67,11 +70,9 @@ function love.draw()
     end
   end
 
-  -- Porte sur le mur gauche
   local dx, dy = tilePos(0, 4)
   drawCentered(images.door, dx, dy)
 
-  -- Mobilier : une rangée de 3 postes, un coin plante/distributeur, des cartons
   for _, col in ipairs({ 3, 6, 9 }) do
     local x, y = tilePos(col, 2)
     drawCentered(images.desk_computer, x, y)
@@ -85,6 +86,5 @@ function love.draw()
   local b2x, b2y = tilePos(2, 6)
   drawCentered(images.box_stack, b2x, b2y)
 
-  -- Avatar
   drawCentered(images.character_1, avatar.x, avatar.y)
 end
