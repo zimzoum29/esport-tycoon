@@ -1,33 +1,59 @@
+local Locale = require("locale")
+local Room = require("room")
+
 local TILE = 48
-local COLS = 12
-local ROWS = 8
 local AVATAR_SPEED = 200
 
 local gameState = "menu"
-local ORIGIN_X, ORIGIN_Y
+local locale
 local playButton = { w = 200, h = 50 }
 local titleFont, buttonFont
 
 local images = {}
 local avatar = { x = 0, y = 0, targetX = 0, targetY = 0 }
 
-local function tilePos(col, row)
-  return ORIGIN_X + col * TILE + TILE / 2, ORIGIN_Y + row * TILE + TILE / 2
-end
-
 local function drawCentered(img, x, y)
   love.graphics.draw(img, x, y, 0, 1, 1, img:getWidth() / 2, img:getHeight() / 2)
 end
 
-local function updateLayout()
+local function buildLocale()
   local w, h = love.graphics.getDimensions()
-  ORIGIN_X = (w - COLS * TILE) / 2
-  ORIGIN_Y = (h - ROWS * TILE) / 2
-  playButton.x = (w - playButton.w) / 2
-  playButton.y = h / 2 + 60
+  local cols, rows = 12, 8
+  local originX = (w - cols * TILE) / 2
+  local originY = (h - rows * TILE) / 2
+
+  local room = Room.new({
+    id = "main", cols = cols, rows = rows, tile = TILE,
+    originX = originX, originY = originY,
+  })
+
+  room:placeProp(3, 2, "desk_computer")
+  room:placeProp(6, 2, "desk_computer")
+  room:placeProp(9, 2, "desk_computer")
+  room:placeProp(10, 1, "plant")
+  room:placeProp(9, 1, "vending_machine")
+  room:placeProp(1, 5, "box_stack")
+  room:placeProp(2, 6, "box_stack")
+
+  local l = Locale.new()
+  l:addRoom(room)
+  return l
 end
 
-function love.resize(w, h)
+local function updateLayout()
+  locale = buildLocale()
+  local room = locale:getCurrentRoom()
+
+  local w, h = love.graphics.getDimensions()
+  playButton.x = (w - playButton.w) / 2
+  playButton.y = h / 2 + 60
+
+  local startCase = room:getCase(5, 4)
+  avatar.x, avatar.y = startCase.x, startCase.y
+  avatar.targetX, avatar.targetY = avatar.x, avatar.y
+end
+
+function love.resize(_w, _h)
   updateLayout()
 end
 
@@ -41,8 +67,6 @@ function love.load()
   end
 
   updateLayout()
-  avatar.x, avatar.y = tilePos(5, 4)
-  avatar.targetX, avatar.targetY = avatar.x, avatar.y
 
   titleFont = love.graphics.newFont(48)
   buttonFont = love.graphics.newFont(20)
@@ -70,8 +94,13 @@ function love.mousepressed(x, y, button)
       and y >= playButton.y and y <= playButton.y + playButton.h then
       gameState = "playing"
     end
-  else
-    avatar.targetX, avatar.targetY = x, y
+    return
+  end
+
+  local room = locale:getCurrentRoom()
+  local case = room:getCaseAtPixel(x, y)
+  if case and case.walkable then
+    avatar.targetX, avatar.targetY = case.x, case.y
   end
 end
 
@@ -91,35 +120,31 @@ local function drawMenu()
   love.graphics.printf("Jouer", playButton.x, playButton.y + 15, playButton.w, "center")
 end
 
-local function drawGame()
-  for row = 0, ROWS - 1 do
-    for col = 0, COLS - 1 do
-      local x, y = tilePos(col, row)
-      local isBorder = row == 0 or row == ROWS - 1 or col == 0 or col == COLS - 1
+local function drawRoom(room)
+  for row = 0, room.rows - 1 do
+    for col = 0, room.cols - 1 do
+      local case = room:getCase(col, row)
+      local isBorder = row == 0 or row == room.rows - 1 or col == 0 or col == room.cols - 1
       if isBorder then
-        drawCentered(images.wall, x, y)
+        drawCentered(images.wall, case.x, case.y)
       else
         local tex = ((col + row) % 2 == 0) and images.floor_a or images.floor_b
-        drawCentered(tex, x, y)
+        drawCentered(tex, case.x, case.y)
       end
     end
   end
 
-  local dx, dy = tilePos(0, 4)
-  drawCentered(images.door, dx, dy)
+  local doorCase = room:getCase(0, 4)
+  drawCentered(images.door, doorCase.x, doorCase.y)
 
-  for _, col in ipairs({ 3, 6, 9 }) do
-    local x, y = tilePos(col, 2)
-    drawCentered(images.desk_computer, x, y)
+  for row = 0, room.rows - 1 do
+    for col = 0, room.cols - 1 do
+      local case = room:getCase(col, row)
+      if case.occupant then
+        drawCentered(images[case.occupant], case.x, case.y)
+      end
+    end
   end
-  local px, py = tilePos(10, 1)
-  drawCentered(images.plant, px, py)
-  local vx, vy = tilePos(9, 1)
-  drawCentered(images.vending_machine, vx, vy)
-  local b1x, b1y = tilePos(1, 5)
-  drawCentered(images.box_stack, b1x, b1y)
-  local b2x, b2y = tilePos(2, 6)
-  drawCentered(images.box_stack, b2x, b2y)
 
   drawCentered(images.character_1, avatar.x, avatar.y)
 end
@@ -129,6 +154,6 @@ function love.draw()
   if gameState == "menu" then
     drawMenu()
   else
-    drawGame()
+    drawRoom(locale:getCurrentRoom())
   end
 end
