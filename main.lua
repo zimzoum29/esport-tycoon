@@ -1,10 +1,13 @@
 local TILE = 48
 local COLS = 12
 local ROWS = 8
-local ORIGIN_X = 112
-local ORIGIN_Y = 38
 local AVATAR_SPEED = 200
- 
+
+local gameState = "menu"
+local ORIGIN_X, ORIGIN_Y
+local playButton = { w = 200, h = 50 }
+local titleFont, buttonFont
+
 local images = {}
 local avatar = { x = 0, y = 0, targetX = 0, targetY = 0 }
 
@@ -12,9 +15,20 @@ local function tilePos(col, row)
   return ORIGIN_X + col * TILE + TILE / 2, ORIGIN_Y + row * TILE + TILE / 2
 end
 
-
 local function drawCentered(img, x, y)
   love.graphics.draw(img, x, y, 0, 1, 1, img:getWidth() / 2, img:getHeight() / 2)
+end
+
+local function updateLayout()
+  local w, h = love.graphics.getDimensions()
+  ORIGIN_X = (w - COLS * TILE) / 2
+  ORIGIN_Y = (h - ROWS * TILE) / 2
+  playButton.x = (w - playButton.w) / 2
+  playButton.y = h / 2 + 60
+end
+
+function love.resize(w, h)
+  updateLayout()
 end
 
 function love.load()
@@ -26,11 +40,17 @@ function love.load()
     images[name] = love.graphics.newImage("assets/" .. name .. ".png")
   end
 
+  updateLayout()
   avatar.x, avatar.y = tilePos(5, 4)
   avatar.targetX, avatar.targetY = avatar.x, avatar.y
+
+  titleFont = love.graphics.newFont(48)
+  buttonFont = love.graphics.newFont(20)
 end
 
 function love.update(dt)
+  if gameState ~= "playing" then return end
+
   local dx = avatar.targetX - avatar.x
   local dy = avatar.targetY - avatar.y
   local dist = math.sqrt(dx * dx + dy * dy)
@@ -43,7 +63,14 @@ function love.update(dt)
 end
 
 function love.mousepressed(x, y, button)
-  if button == 1 then
+  if button ~= 1 then return end
+
+  if gameState == "menu" then
+    if x >= playButton.x and x <= playButton.x + playButton.w
+      and y >= playButton.y and y <= playButton.y + playButton.h then
+      gameState = "playing"
+    end
+  else
     avatar.targetX, avatar.targetY = x, y
   end
 end
@@ -54,9 +81,17 @@ function love.keypressed(key)
   end
 end
 
-function love.draw()
-  love.graphics.clear(0.06, 0.08, 0.11)
+local function drawMenu()
+  local w, h = love.graphics.getDimensions()
+  love.graphics.setFont(titleFont)
+  love.graphics.printf("ESPORT TYCOON", 0, h / 2 - 120, w, "center")
 
+  love.graphics.setFont(buttonFont)
+  love.graphics.rectangle("line", playButton.x, playButton.y, playButton.w, playButton.h)
+  love.graphics.printf("Jouer", playButton.x, playButton.y + 15, playButton.w, "center")
+end
+
+local function drawGame()
   for row = 0, ROWS - 1 do
     for col = 0, COLS - 1 do
       local x, y = tilePos(col, row)
@@ -87,4 +122,13 @@ function love.draw()
   drawCentered(images.box_stack, b2x, b2y)
 
   drawCentered(images.character_1, avatar.x, avatar.y)
+end
+
+function love.draw()
+  love.graphics.clear(0.06, 0.08, 0.11)
+  if gameState == "menu" then
+    drawMenu()
+  else
+    drawGame()
+  end
 end
