@@ -23,7 +23,7 @@ end
 
 local function buildLocale()
   local w, h = love.graphics.getDimensions()
-  local cols, rows = 12, 8
+  local cols, rows = 9, 9
 
   local minXrel = -(rows - 1) * (TILE_W / 2) - TILE_W / 2
   local maxXrel = (cols - 1) * (TILE_W / 2) + TILE_W / 2
@@ -140,7 +140,7 @@ local function drawRoom(room)
   for row = 0, room.rows - 1 do
     for col = 0, room.cols - 1 do
       local case = room:getCase(col, row)
-      local tex = ((col + row) % 2 == 0) and images.floor_iso_a or images.floor_iso_b
+      local tex = (col % 4 == 0 or row % 4 == 0) and images.floor_iso_a or images.floor_iso_b
       drawCentered(tex, case.x, case.y)
     end
   end

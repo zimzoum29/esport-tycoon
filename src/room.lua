@@ -18,8 +18,7 @@ function Room.new(config)
     self.grid[row] = {}
     for col = 0, self.cols - 1 do
       local x, y = self:gridToPixel(col, row)
-      local isWall = row == 0 or col == 0
-      self.grid[row][col] = Case.new(col, row, x, y, not isWall)
+      self.grid[row][col] = Case.new(col, row, x, y, true)
     end
   end
 
