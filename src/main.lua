@@ -179,10 +179,9 @@ local function drawRoom(room)
 
   local avatarCol, avatarRow = room:pixelToGrid(avatar.x, avatar.y)
   table.insert(drawables, {
-    depth = avatarCol + avatarRow,
+    depth = avatarCol + avatarRow + 0.2,
     draw = function() drawCentered(images.character_1, avatar.x, avatar.y + PROP_Y_OFFSET) end,
   })
-
   table.sort(drawables, function(a, b) return a.depth < b.depth end)
   for _, d in ipairs(drawables) do
     d.draw()
