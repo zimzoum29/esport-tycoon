@@ -8,7 +8,8 @@ function Room.new(config)
   self.id = config.id
   self.cols = config.cols
   self.rows = config.rows
-  self.tile = config.tile
+  self.tileW = config.tileW
+  self.tileH = config.tileH
   self.originX = config.originX
   self.originY = config.originY
   self.grid = {}
@@ -16,14 +17,27 @@ function Room.new(config)
   for row = 0, self.rows - 1 do
     self.grid[row] = {}
     for col = 0, self.cols - 1 do
-      local x = self.originX + col * self.tile + self.tile / 2
-      local y = self.originY + row * self.tile + self.tile / 2
-      local isBorder = row == 0 or row == self.rows - 1 or col == 0 or col == self.cols - 1
-      self.grid[row][col] = Case.new(col, row, x, y, not isBorder)
+      local x, y = self:gridToPixel(col, row)
+      local isWall = row == 0 or col == 0
+      self.grid[row][col] = Case.new(col, row, x, y, not isWall)
     end
   end
 
   return self
+end
+
+function Room:gridToPixel(col, row)
+  local x = self.originX + (col - row) * (self.tileW / 2)
+  local y = self.originY + (col + row) * (self.tileH / 2) + self.tileH / 2
+  return x, y
+end
+
+function Room:pixelToGrid(px, py)
+  local u = px - self.originX
+  local v = py - self.originY - self.tileH / 2
+  local col = u / self.tileW + v / self.tileH
+  local row = v / self.tileH - u / self.tileW
+  return col, row
 end
 
 function Room:getCase(col, row)
@@ -32,9 +46,8 @@ function Room:getCase(col, row)
 end
 
 function Room:getCaseAtPixel(px, py)
-  local col = math.floor((px - self.originX) / self.tile)
-  local row = math.floor((py - self.originY) / self.tile)
-  return self:getCase(col, row)
+  local col, row = self:pixelToGrid(px, py)
+  return self:getCase(math.floor(col + 0.5), math.floor(row + 0.5))
 end
 
 function Room:placeProp(col, row, assetName)
