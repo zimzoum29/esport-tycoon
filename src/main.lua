@@ -10,7 +10,7 @@ local playButton = { w = 200, h = 50 }
 local titleFont, buttonFont
 
 local images = {}
-local avatar = { x = 0, y = 0, targetX = 0, targetY = 0 }
+local avatar = { x = 0, y = 0, col = 5, row = 4, path = {} }
 
 local function drawCentered(img, x, y)
   love.graphics.draw(img, x, y, 0, 1, 1, img:getWidth() / 2, img:getHeight() / 2)
@@ -50,7 +50,8 @@ local function updateLayout()
 
   local startCase = room:getCase(5, 4)
   avatar.x, avatar.y = startCase.x, startCase.y
-  avatar.targetX, avatar.targetY = avatar.x, avatar.y
+  avatar.col, avatar.row = startCase.col, startCase.row
+  avatar.path = {}
 end
 
 function love.resize(_w, _h)
@@ -74,15 +75,22 @@ end
 
 function love.update(dt)
   if gameState ~= "playing" then return end
+  if #avatar.path == 0 then return end
 
-  local dx = avatar.targetX - avatar.x
-  local dy = avatar.targetY - avatar.y
+  local nextCase = avatar.path[1]
+  local dx = nextCase.x - avatar.x
+  local dy = nextCase.y - avatar.y
   local dist = math.sqrt(dx * dx + dy * dy)
+
   if dist > 4 then
     local step = AVATAR_SPEED * dt
     local t = math.min(1, step / dist)
     avatar.x = avatar.x + dx * t
     avatar.y = avatar.y + dy * t
+  else
+    avatar.x, avatar.y = nextCase.x, nextCase.y
+    avatar.col, avatar.row = nextCase.col, nextCase.row
+    table.remove(avatar.path, 1)
   end
 end
 
@@ -98,9 +106,12 @@ function love.mousepressed(x, y, button)
   end
 
   local room = locale:getCurrentRoom()
-  local case = room:getCaseAtPixel(x, y)
-  if case and case.walkable then
-    avatar.targetX, avatar.targetY = case.x, case.y
+  local targetCase = room:getCaseAtPixel(x, y)
+  if targetCase and targetCase.walkable then
+    local path = room:findPath(avatar.col, avatar.row, targetCase.col, targetCase.row)
+    if path then
+      avatar.path = path
+    end
   end
 end
 

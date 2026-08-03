@@ -45,4 +45,45 @@ function Room:placeProp(col, row, assetName)
   end
 end
 
+function Room:findPath(fromCol, fromRow, toCol, toRow)
+  local target = self:getCase(toCol, toRow)
+  if not target or not target.walkable then return nil end
+
+  local visited = { [fromCol .. "," .. fromRow] = true }
+  local cameFrom = {}
+  local queue = { { col = fromCol, row = fromRow } }
+  local directions = { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } }
+
+  local qi = 1
+  local found = false
+  while qi <= #queue do
+    local current = queue[qi]
+    qi = qi + 1
+    if current.col == toCol and current.row == toRow then
+      found = true
+      break
+    end
+    for _, d in ipairs(directions) do
+      local nc, nr = current.col + d[1], current.row + d[2]
+      local key = nc .. "," .. nr
+      local neighbor = self:getCase(nc, nr)
+      if neighbor and neighbor.walkable and not visited[key] then
+        visited[key] = true
+        cameFrom[key] = current
+        table.insert(queue, { col = nc, row = nr })
+      end
+    end
+  end
+
+  if not found then return nil end
+
+  local path = {}
+  local cur = { col = toCol, row = toRow }
+  while not (cur.col == fromCol and cur.row == fromRow) do
+    table.insert(path, 1, self:getCase(cur.col, cur.row))
+    cur = cameFrom[cur.col .. "," .. cur.row]
+  end
+  return path
+end
+
 return Room
