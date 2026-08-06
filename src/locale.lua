@@ -19,12 +19,4 @@ function Locale:getCurrentRoom()
   return self.currentRoom
 end
 
-function Locale:switchTo(roomId)
-  local room = self.rooms[roomId]
-  if room then
-    self.currentRoom = room
-  end
-  return self.currentRoom
-end
-
 return Locale
